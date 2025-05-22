@@ -1,9 +1,10 @@
 import pygame
 import random
+import math
 pygame.init()
 
-window_width = 800
-window_height = 450
+window_width = 1600
+window_height = 900
 screen = pygame.display.set_mode((window_width, window_height))
 
 #variables
@@ -16,8 +17,8 @@ class Car(pygame.sprite.Sprite):
     def __init__(self): #constructor, called when creating a new player object
         super().__init__()
         self.image = pygame.image.load("formula_nr1.jpg")
-        self.image = pygame.transform.scale(self.image, (100, 100))
-        self.rect = self.image.get_rect(midbottom = (150, 0.75*window_height))
+        self.image = pygame.transform.scale(self.image, (200, 200))
+        self.rect = self.image.get_rect(midbottom = (0.5*window_width, 0.5*window_height))
         self.Variables()
 
     def Variables(self):
@@ -34,23 +35,18 @@ class Car(pygame.sprite.Sprite):
         self.side_a = 0
         self.rotatiton_speed = 0
         self.d_rotatiton = 0
-        self.deceleration = -0.08
+        self.deceleration = -0.01
 
     def PlayerInput(self): #formula movement input
         
         keys = pygame.key.get_pressed()
-        if keys [pygame.K_w]:
-            if self.forward_speed >= 5:
-                self.forward_a = 0.2
-            elif self.forward_speed <= 15:
-                self.forward_a = 0.1
-            elif self.forward_speed <= 25:
-                self.forward_a = 0.05
-            else:
-                pass
 
-        if keys [pygame.K_s] or [pygame.K_SPACE]:
-            pass
+        if keys [pygame.K_w]:
+            self.forward_a = 0.02
+
+        elif keys [pygame.K_s] or keys [pygame.K_SPACE]:
+            self.forward_a = -0.02
+            
         if keys [pygame.K_a]:
             pass
         if keys [pygame.K_d]:
@@ -60,16 +56,23 @@ class Car(pygame.sprite.Sprite):
 
     def Movement(self):
         keys = pygame.key.get_pressed()
-        if keys [pygame.K_w]:
+        if keys [pygame.K_w] or keys [pygame.K_s] or keys [pygame.K_SPACE]:
             self.forward_speed += self.forward_a
-            self.x_pos_new = self.x_pos + self.forward_speed
-            self.rect.x += self.x_pos_new
-            print (self.forward_speed)
+            self.y_pos_new = self.y_pos + self.forward_speed
+            self.rect.y += self.y_pos_new
+            
         elif self.forward_speed > 0:
             self.forward_speed += self.deceleration
-            self.x_pos_new = self.x_pos + self.forward_speed
-            self.rect.x += self.x_pos_new
+            self.y_pos_new = self.y_pos + self.forward_speed
+            self.rect.y += self.y_pos_new
 
+        elif self.forward_speed < 0:
+            self.forward_speed -= self.deceleration
+            self.y_pos_new = self.y_pos + self.forward_speed
+            self.rect.y += self.y_pos_new
+        
+       
+        print (self.forward_a)
 
     def update(self):
 
