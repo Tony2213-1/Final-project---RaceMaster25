@@ -22,6 +22,10 @@ class Car(pygame.sprite.Sprite):
         self.Variables()
 
     def Variables(self):
+        self.original_image = pygame.image.load("formula_nr1.jpg")
+        self.original_image = pygame.transform.scale(self.original_image, (100, 100))
+        self.image = self.original_image
+        self.rect = self.image.get_rect(midbottom=(150, 0.75 * window_height))
         self.x_pos = 0
         self.x_pos_new = 0
         self.y_pos = 0
@@ -42,37 +46,64 @@ class Car(pygame.sprite.Sprite):
         keys = pygame.key.get_pressed()
 
         if keys [pygame.K_w]:
-            self.forward_a = 0.02
+            if self.forward_speed < 10:
+                self.forward_a = 0.02
+            else:
+                self.forward_speed = 9.999
 
         elif keys [pygame.K_s] or keys [pygame.K_SPACE]:
-            self.forward_a = -0.02
+            if self.forward_speed > -10:
+                self.forward_a = -0.1
+            else:
+                self.forward_speed = -9.999
             
         if keys [pygame.K_a]:
-            pass
+            if self.forward_speed >= 2.33:
+                self.angle += (-self.forward_speed/8)+2
+            elif self.forward_speed > 0.5:
+                self.angle += (1/(self.forward_speed**2+1.2)+1)
         if keys [pygame.K_d]:
-            pass
+            if self.forward_speed >= 2.33:
+                self.angle -= (-self.forward_speed/8)+2
+            elif self.forward_speed > 0.5:
+                self.angle -= (1/(self.forward_speed**2+1.2)+1)
         if keys [pygame.K_SPACE]:
             pass
 
     def Movement(self):
         keys = pygame.key.get_pressed()
         if keys [pygame.K_w] or keys [pygame.K_s] or keys [pygame.K_SPACE]:
+            self.y_pos == self.y_pos_new
+            self.x_pos == self.x_pos_new
             self.forward_speed += self.forward_a
-            self.y_pos_new = self.y_pos + self.forward_speed
-            self.rect.y += self.y_pos_new
+            self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
+            self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
+            self.rect.y -= self.y_pos_new
+            self.rect.x -= self.x_pos_new
             
         elif self.forward_speed > 0:
+            self.y_pos == self.y_pos_new
+            self.x_pos == self.x_pos_new
             self.forward_speed += self.deceleration
-            self.y_pos_new = self.y_pos + self.forward_speed
-            self.rect.y += self.y_pos_new
+            self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
+            self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
+            self.rect.y -= self.y_pos_new
+            self.rect.x -= self.x_pos_new
 
         elif self.forward_speed < 0:
+            self.y_pos == self.y_pos_new
+            self.x_pos == self.x_pos_new
             self.forward_speed -= self.deceleration
-            self.y_pos_new = self.y_pos + self.forward_speed
-            self.rect.y += self.y_pos_new
+            self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
+            self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
+            self.rect.y -= self.y_pos_new
+            self.rect.x -= self.x_pos_new
         
+        if keys [pygame.K_a] or keys [pygame.K_d]:
+            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.rect = self.image.get_rect(center=self.rect.center)
        
-        print (self.forward_a)
+        print (self.angle)
 
     def update(self):
 
