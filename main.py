@@ -1,6 +1,6 @@
-import pygame # klíčová knihovna umožňující vytvářet jednoduše nejen hry
+import pygame
 import random
-pygame.init() # nutný příkaz hned na začátku pro správnou inicializaci knihovny
+pygame.init()
 
 window_width = 800
 window_height = 450
@@ -18,6 +18,7 @@ class Car(pygame.sprite.Sprite):
         self.image = pygame.image.load("formula_nr1.jpg")
         self.image = pygame.transform.scale(self.image, (100, 100))
         self.rect = self.image.get_rect(midbottom = (150, 0.75*window_height))
+        self.Variables()
 
     def Variables(self):
         self.x_pos = 0
@@ -28,22 +29,23 @@ class Car(pygame.sprite.Sprite):
         self.z_pos_new = 0
         self.angle = 0
         self.wheel_turn = 0
-        self.forward_a = 0.1
+        self.forward_a = 0
         self.forward_speed = 0
         self.side_a = 0
         self.rotatiton_speed = 0
         self.d_rotatiton = 0
+        self.deceleration = -0.08
 
-    def PlayerInput(self): #ovládání formule
+    def PlayerInput(self): #formula movement input
         
         keys = pygame.key.get_pressed()
         if keys [pygame.K_w]:
-            if self.forward_speed >= 50:
-                self.forward_a = 2
-            elif self.forward_speed <= 200:
-                self.forward_a = 1.3
-            elif self.forward_speed <= 400:
-                self.forward_a = 0.6
+            if self.forward_speed >= 5:
+                self.forward_a = 0.2
+            elif self.forward_speed <= 15:
+                self.forward_a = 0.1
+            elif self.forward_speed <= 25:
+                self.forward_a = 0.05
             else:
                 pass
 
@@ -61,7 +63,12 @@ class Car(pygame.sprite.Sprite):
         if keys [pygame.K_w]:
             self.forward_speed += self.forward_a
             self.x_pos_new = self.x_pos + self.forward_speed
-            self.rect.x == self.x_pos_new
+            self.rect.x += self.x_pos_new
+            print (self.forward_speed)
+        elif self.forward_speed > 0:
+            self.forward_speed += self.deceleration
+            self.x_pos_new = self.x_pos + self.forward_speed
+            self.rect.x += self.x_pos_new
 
 
     def update(self):
@@ -84,15 +91,15 @@ while True:
     if GameActive == True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                pygame.quit() # zavřeme herní okno
-                exit() # úplně opustíme herní smyčku, celý program se ukončí
+                pygame.quit()
+                exit()
         
         #screen.blit(sky_surface,(0,0)) # položíme sky_surface na souřadnice [0,0]
-        screen.blit(ground_surface,(0,window_height)) # položíme ground_surface na souřadnice [0,300] (pod oblohu)
+        screen.blit(ground_surface, (0, 0))
 
         player.update()
         player.draw(screen)
-
+        
     
-    pygame.display.update() # updatujeme vykreslené okno
-    clock.tick(60) # herní smyčka proběhne maximálně 60x za sekundu
+    pygame.display.update()
+    clock.tick(60)
