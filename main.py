@@ -40,6 +40,8 @@ class Car(pygame.sprite.Sprite):
         self.rotatiton_speed = 0
         self.d_rotatiton = 0
         self.deceleration = -0.01
+        self.drift = True
+        self.img_angle = 0
 
     def PlayerInput(self): #formula movement input
         keys = pygame.key.get_pressed()
@@ -62,21 +64,41 @@ class Car(pygame.sprite.Sprite):
                     self.forward_speed = -9.999
                 
             if keys [pygame.K_a]:
-                if self.forward_speed >= 2.33 or self.forward_speed < -2.33:
+
+                if self.forward_speed >= 3.74:
                     self.angle += (-self.forward_speed/8)+2
-                elif self.forward_speed > 0.7 or self.forward_speed < -0.7:
-                    self.angle += (1/(self.forward_speed**2+1.2)+1)
+
+                elif self.forward_speed >= 0.75:
+                    self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)
+                
+                elif -0.75 >= self.forward_speed > -3.74:
+                    self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)
+                
+                elif self.forward_speed <= -3.74:
+                    self.angle += (self.forward_speed/8)+2    
+
             if keys [pygame.K_d]:
-                if self.forward_speed >= 2.33 or self.forward_speed < -2.33:
+
+                if self.forward_speed >= 3.74:
                     self.angle -= (-self.forward_speed/8)+2
-                elif self.forward_speed > 0.7 or self.forward_speed < -0.7:
-                    self.angle -= (1/(self.forward_speed**2+1.2)+1)
+
+                elif self.forward_speed >= 0.75:
+                    self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)
+                
+                elif -0.75 >= self.forward_speed > -3.74:
+                    self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)*0.7
+                
+                elif self.forward_speed <= -3.74:
+                    self.angle -= ((self.forward_speed/8)+2)*0.7
+
         if keys [pygame.K_DELETE]:
             if game_active == False and event.key == pygame.K_SPACE:
                 game_active = True
 
     def Movement(self):
         keys = pygame.key.get_pressed()
+
+        
         if keys [pygame.K_w] or keys [pygame.K_s] or keys [pygame.K_SPACE]:
             self.y_pos == self.y_pos_new
             self.x_pos == self.x_pos_new
@@ -85,7 +107,19 @@ class Car(pygame.sprite.Sprite):
             self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
             self.rect.y -= self.y_pos_new
             self.rect.x -= self.x_pos_new
+
+        elif keys [pygame.K_w] or keys [pygame.K_s] or keys [pygame.K_SPACE]:
             
+            self.y_pos == self.y_pos_new
+            self.x_pos == self.x_pos_new
+            self.forward_speed += self.forward_a
+            self.y_pos_new = self.y_pos + math.cos((self.angle)/180*math.pi)*self.forward_speed
+            self.x_pos_new = self.x_pos + math.sin((self.angle)/180*math.pi)*self.forward_speed
+            self.rect.y -= self.y_pos_new
+            self.rect.x -= self.x_pos_new
+            
+        
+        
         elif self.forward_speed > 0:
             self.y_pos == self.y_pos_new
             self.x_pos == self.x_pos_new
@@ -108,7 +142,7 @@ class Car(pygame.sprite.Sprite):
             self.image = pygame.transform.rotate(self.original_image, self.angle)
             self.rect = self.image.get_rect(center=self.rect.center)
        
-        print (self.angle)
+        print (self.forward_speed)
 
     def update(self):
 
