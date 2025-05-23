@@ -16,14 +16,14 @@ class Car(pygame.sprite.Sprite):
     
     def __init__(self): #constructor, called when creating a new player object
         super().__init__()
-        self.image = pygame.image.load("formula_nr1.jpg")
+        self.image = pygame.image.load("formula_nr1.png")
         self.image = pygame.transform.scale(self.image, (200, 200))
         self.rect = self.image.get_rect(midbottom = (0.5*window_width, 0.5*window_height))
         self.Variables()
 
     def Variables(self):
-        self.original_image = pygame.image.load("formula_nr1.jpg")
-        self.original_image = pygame.transform.scale(self.original_image, (100, 100))
+        self.original_image = pygame.image.load("formula_nr1.png")
+        self.original_image = pygame.transform.scale(self.original_image, (200, 200))
         self.image = self.original_image
         self.rect = self.image.get_rect(midbottom=(150, 0.75 * window_height))
         self.x_pos = 0
@@ -46,26 +46,30 @@ class Car(pygame.sprite.Sprite):
         if GameActive == True:
             
             if keys [pygame.K_w]:
-                if self.forward_speed < 10:
+                if self.forward_speed < 0:
+                    self.forward_a = 0.08
+                elif self.forward_speed < 10:
                     self.forward_a = 0.02
                 else:
                     self.forward_speed = 9.999
 
             elif keys [pygame.K_s] or keys [pygame.K_SPACE]:
-                if self.forward_speed > -10:
-                    self.forward_a = -0.1
+                if self.forward_speed > 0:
+                    self.forward_a = -0.08
+                elif self.forward_speed <= 0 and self.forward_speed > -10:
+                    self.forward_a = -0.02
                 else:
                     self.forward_speed = -9.999
                 
             if keys [pygame.K_a]:
-                if self.forward_speed >= 2.33:
+                if self.forward_speed >= 2.33 or self.forward_speed < -2.33:
                     self.angle += (-self.forward_speed/8)+2
-                elif self.forward_speed > 0.7:
+                elif self.forward_speed > 0.7 or self.forward_speed < -0.7:
                     self.angle += (1/(self.forward_speed**2+1.2)+1)
             if keys [pygame.K_d]:
-                if self.forward_speed >= 2.33:
+                if self.forward_speed >= 2.33 or self.forward_speed < -2.33:
                     self.angle -= (-self.forward_speed/8)+2
-                elif self.forward_speed > 0.7:
+                elif self.forward_speed > 0.7 or self.forward_speed < -0.7:
                     self.angle -= (1/(self.forward_speed**2+1.2)+1)
         if keys [pygame.K_DELETE]:
             if game_active == False and event.key == pygame.K_SPACE:
@@ -137,4 +141,4 @@ while GameActive == True:
         
     
     pygame.display.update()
-    clock.tick(60)
+    clock.tick(120)
