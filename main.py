@@ -42,33 +42,34 @@ class Car(pygame.sprite.Sprite):
         self.deceleration = -0.01
 
     def PlayerInput(self): #formula movement input
-        
         keys = pygame.key.get_pressed()
-
-        if keys [pygame.K_w]:
-            if self.forward_speed < 10:
-                self.forward_a = 0.02
-            else:
-                self.forward_speed = 9.999
-
-        elif keys [pygame.K_s] or keys [pygame.K_SPACE]:
-            if self.forward_speed > -10:
-                self.forward_a = -0.1
-            else:
-                self.forward_speed = -9.999
+        if GameActive == True:
             
-        if keys [pygame.K_a]:
-            if self.forward_speed >= 2.33:
-                self.angle += (-self.forward_speed/8)+2
-            elif self.forward_speed > 0.5:
-                self.angle += (1/(self.forward_speed**2+1.2)+1)
-        if keys [pygame.K_d]:
-            if self.forward_speed >= 2.33:
-                self.angle -= (-self.forward_speed/8)+2
-            elif self.forward_speed > 0.5:
-                self.angle -= (1/(self.forward_speed**2+1.2)+1)
-        if keys [pygame.K_SPACE]:
-            pass
+            if keys [pygame.K_w]:
+                if self.forward_speed < 10:
+                    self.forward_a = 0.02
+                else:
+                    self.forward_speed = 9.999
+
+            elif keys [pygame.K_s] or keys [pygame.K_SPACE]:
+                if self.forward_speed > -10:
+                    self.forward_a = -0.1
+                else:
+                    self.forward_speed = -9.999
+                
+            if keys [pygame.K_a]:
+                if self.forward_speed >= 2.33:
+                    self.angle += (-self.forward_speed/8)+2
+                elif self.forward_speed > 0.7:
+                    self.angle += (1/(self.forward_speed**2+1.2)+1)
+            if keys [pygame.K_d]:
+                if self.forward_speed >= 2.33:
+                    self.angle -= (-self.forward_speed/8)+2
+                elif self.forward_speed > 0.7:
+                    self.angle -= (1/(self.forward_speed**2+1.2)+1)
+        if keys [pygame.K_DELETE]:
+            if game_active == False and event.key == pygame.K_SPACE:
+                game_active = True
 
     def Movement(self):
         keys = pygame.key.get_pressed()
@@ -121,18 +122,18 @@ ground_surface.fill("gray")
 
 GameActive = True
 
-while True:
-    if GameActive == True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                exit()
+while GameActive == True:
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
         
-        #screen.blit(sky_surface,(0,0)) # položíme sky_surface na souřadnice [0,0]
-        screen.blit(ground_surface, (0, 0))
+    #screen.blit(sky_surface,(0,0)) # položíme sky_surface na souřadnice [0,0]
+    screen.blit(ground_surface, (0, 0))
 
-        player.update()
-        player.draw(screen)
+    player.update()
+    player.draw(screen)
         
     
     pygame.display.update()
