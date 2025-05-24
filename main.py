@@ -44,7 +44,8 @@ class Car(pygame.sprite.Sprite):
         self.img_angle = 0
         self.turn_state = 0
         self.turn_state_active = False
-        self.turn_state_max = 20
+        self.turn_state_max = 30
+        
 
     def PlayerInput(self): #formula movement input
         keys = pygame.key.get_pressed()
@@ -68,46 +69,51 @@ class Car(pygame.sprite.Sprite):
                     self.forward_speed = -9.999
 
 
-            if keys [pygame.K_a] or self.turn_state != 0:
+            if keys [pygame.K_a] or self.turn_state > 0:
 
                 if keys [pygame.K_a] and abs(self.turn_state) < self.turn_state_max and (self.forward_speed > 0.75 or self.forward_speed < -0.75):
-
                     self.turn_state += 1
                     self.turn_state_active = True
+            
+                
+                if keys [pygame.K_a] or self.turn_state > 0:
 
-                if keys [pygame.K_a]:
+                    self.trigger = True
+
                     if self.forward_speed >= 3.74:
-                        self.angle += ((-self.forward_speed/8)+2)*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle += ((-self.forward_speed/8)+2)*((10+abs(self.turn_state))/(10+self.turn_state_max))
 
                     elif self.forward_speed >= 0.75:
-                        self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)*((10+abs(self.turn_state))/(10+self.turn_state_max))
                     
                     elif -0.75 >= self.forward_speed > -3.74:
-                        self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)*0.7*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle += (-2.5/(self.forward_speed**2+0.9)+1.7)*0.7*((10+abs(self.turn_state))/(10+self.turn_state_max))
                     
                     elif self.forward_speed <= -3.74:
-                        self.angle += ((self.forward_speed/8)+2)*0.7*(abs(self.turn_state)/self.turn_state_max)    
-
+                        self.angle += ((self.forward_speed/8)+2)*0.7*((10+abs(self.turn_state))/(10+self.turn_state_max))
             
-            if keys [pygame.K_d] or self.turn_state != 0:
+            if keys [pygame.K_d] or abs(self.turn_state) > 0 and self.trigger == False:
 
                 if keys [pygame.K_d] and abs(self.turn_state) < self.turn_state_max and (self.forward_speed > 0.75 or self.forward_speed < -0.75):
-
+                    
                     self.turn_state -= 1
                     self.turn_state_active = True
 
-                if keys [pygame.K_d]:
+                if (keys [pygame.K_d] or self.turn_state < 0):
+
                     if self.forward_speed >= 3.74:
-                        self.angle -= ((-self.forward_speed/8)+2)*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle -= ((-self.forward_speed/8)+2)*((10+abs(self.turn_state))/(10+self.turn_state_max))
 
                     elif self.forward_speed >= 0.75:
-                        self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)*((10+abs(self.turn_state))/(10+self.turn_state_max))
                     
                     elif -0.75 >= self.forward_speed > -3.74:
-                        self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)*0.7*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle -= (-2.5/(self.forward_speed**2+0.9)+1.7)*0.7*((10+abs(self.turn_state))/(10+self.turn_state_max))
                     
                     elif self.forward_speed <= -3.74:
-                        self.angle -= ((self.forward_speed/8)+2)*0.7*(abs(self.turn_state)/self.turn_state_max)
+                        self.angle -= ((self.forward_speed/8)+2)*0.7*((10+abs(self.turn_state))/(10+self.turn_state_max))
+
+                self.trigger = False
 
             print (self.turn_state)
 
@@ -115,8 +121,17 @@ class Car(pygame.sprite.Sprite):
                 
                 if self.turn_state > 0 and keys [pygame.K_a] == False:
                     self.turn_state -= 1
+                    
+
+                elif self.turn_state > 0 and (self.forward_speed < 0.75 and self.forward_speed > -0.75):
+                    self.turn_state -= 1
+                    
 
                 elif self.turn_state < 0 and keys [pygame.K_d] == False:
+                    self.turn_state += 1
+                    
+
+                elif self.turn_state < 0 and (self.forward_speed < 0.75 and self.forward_speed > -0.75):
                     self.turn_state += 1
 
                 elif self.turn_state == 0:
@@ -158,11 +173,13 @@ class Car(pygame.sprite.Sprite):
             self.rect.y -= self.y_pos_new
             self.rect.x -= self.x_pos_new
         
-        if keys [pygame.K_a] or keys [pygame.K_d] or self.turn_state_active == True:
+        if keys [pygame.K_a] or keys [pygame.K_d]:
             self.image = pygame.transform.rotate(self.original_image, self.angle)
             self.rect = self.image.get_rect(center=self.rect.center)
        
-        
+        if self.turn_state_active == True:
+            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.rect = self.image.get_rect(center=self.rect.center)
 
     def update(self):
 
