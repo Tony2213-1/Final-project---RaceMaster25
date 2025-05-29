@@ -135,7 +135,7 @@ class Car(pygame.sprite.Sprite):
                     self.turn_state += 1
 
                 elif self.turn_state == 0:
-                    self.turn_state_active == False
+                    self.turn_state_active = False
             
         if keys [pygame.K_DELETE]:
             if game_active == False and event.key == pygame.K_SPACE:
@@ -147,8 +147,6 @@ class Car(pygame.sprite.Sprite):
         
         if keys [pygame.K_w] or keys [pygame.K_s] or keys [pygame.K_SPACE]:
 
-            self.y_pos == self.y_pos_new
-            self.x_pos == self.x_pos_new
             self.forward_speed += self.forward_a
             self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
             self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
@@ -156,8 +154,6 @@ class Car(pygame.sprite.Sprite):
             self.rect.x -= self.x_pos_new
 
         elif self.forward_speed > 0:
-            self.y_pos == self.y_pos_new
-            self.x_pos == self.x_pos_new
             self.forward_speed += self.deceleration
             self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
             self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
@@ -165,8 +161,6 @@ class Car(pygame.sprite.Sprite):
             self.rect.x -= self.x_pos_new
 
         elif self.forward_speed < 0:
-            self.y_pos == self.y_pos_new
-            self.x_pos == self.x_pos_new
             self.forward_speed -= self.deceleration
             self.y_pos_new = self.y_pos + math.cos(self.angle/180*math.pi)*self.forward_speed
             self.x_pos_new = self.x_pos + math.sin(self.angle/180*math.pi)*self.forward_speed
@@ -174,11 +168,11 @@ class Car(pygame.sprite.Sprite):
             self.rect.x -= self.x_pos_new
         
         if keys [pygame.K_a] or keys [pygame.K_d]:
-            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.image = pygame.transform.rotozoom(self.original_image, self.angle, 1.0)
             self.rect = self.image.get_rect(center=self.rect.center)
        
         if self.turn_state_active == True:
-            self.image = pygame.transform.rotate(self.original_image, self.angle)
+            self.image = pygame.transform.rotozoom(self.original_image, self.angle, 1.0)
             self.rect = self.image.get_rect(center=self.rect.center)
 
     def update(self):
