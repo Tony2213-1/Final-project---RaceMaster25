@@ -235,20 +235,23 @@ class Timer:
         self.best_times = load_best_times()
         self.best_time = self.best_times.get(level_name, None)
         self.difference = 0
+        self.pause_time = None
+        self.paused_duration = 0
     
-        
-
     def Update(self):
         current_time = time.time()
         if self.start_time is None and current_time - self.countdown_start >= self.countdown_duration:
             self.start_time = current_time
 
     def GetTime(self):
-        if self.start_time == 0:
+        if self.start_time is None:
             return 0
         if self.end_time:
-            return self.end_time - self.start_time
-        return time.time() - self.start_time
+            return self.end_time - self.start_time - self.paused_duration
+        now = time.time()
+        if self.pause_time:
+            return self.pause_time - self.start_time - self.paused_duration
+        return now - self.start_time - self.paused_duration
         
     def Draw(self, screen):
         
@@ -305,10 +308,21 @@ class Timer:
         self.start_time = None
         self.end_time = None
         self.finished = False
+        self.pause_time = None
+        self.paused_duration = 0
+    
+    def Pause(self):
+        if self.pause_time is None:
+            self.pause_time = time.time()
+
+    def Resume(self):
+        if self.pause_time is not None:
+            self.paused_duration += time.time() - self.pause_time
+            self.pause_time = None
 
     def TimerUpdate(self):
-        self.Update()
 
+        self.Update()
         self.CheckFinish(car, track)
         if self.finished:
             self.BestTime()
@@ -340,7 +354,6 @@ class Button:
 
 car = Car()
 player = pygame.sprite.GroupSingle()
-
 player.add(car)
 clock = pygame.time.Clock()
 timer = Timer()
@@ -369,6 +382,7 @@ def BackToMainMenu():
 def BackToTrackPlay():
     global game_state
     game_state = STATE_PLAYING
+    timer.Resume() 
 
 def TrackPlay():
     global game_state, timer, car, track
@@ -406,6 +420,7 @@ def GeneralSettings():
 
 def GameMenu():
     global game_state, game_menu_buttons
+    timer.Pause()
     game_state = STATE_INGAME_MENU
     game_menu_buttons = [
         Button(0.325, 0.3, 0.35, 0.12, (150, 150, 170), (150, 150, 250), "Resume", BackToTrackPlay),
@@ -461,9 +476,11 @@ while True:
         if keys[pygame.K_DELETE]:
             car.Reset()
             timer.Reset()
-        if keys[pygame.K_ESCAPE]:
-            
-            GameMenu()
+        if keys[pygame.K_ESCAPE] and timer.start_time != None:
+            if game_state == STATE_PLAYING:
+                GameMenu()
+            elif game_state == STATE_INGAME_MENU:
+                BackToTrackPlay()
 
         offset_x = car.camera_x - window_width / 2
         offset_y = car.camera_y - window_height / 2
@@ -475,7 +492,12 @@ while True:
             player.update()
 
         car.adjust_for_terrain(track)
-        timer.TimerUpdate()
+        
+        if game_state == STATE_INGAME_MENU:
+            pass
+        elif game_state == STATE_PLAYING:
+            timer.TimerUpdate()
+
         player.draw(screen)
 
         
