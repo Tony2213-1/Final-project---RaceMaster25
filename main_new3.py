@@ -277,6 +277,8 @@ class Timer:
         self.fin_diff = None
         self.cp_diffs = {}
         self.cp_diff_times = {}
+        self.pause_time = None
+        self.paused_duration = 0
 
         # Dynamically generate checkpoints
         checkpoint_colors = [
@@ -302,8 +304,11 @@ class Timer:
         if self.start_time is None:
             return 0
         if self.end_time:
-            return self.end_time - self.start_time
-        return time.time() - self.start_time
+            return self.end_time - self.start_time - self.paused_duration
+        now = time.time()
+        if self.pause_time:
+            return self.pause_time - self.start_time - self.paused_duration
+        return now - self.start_time - self.paused_duration
 
     def Draw(self, screen):
         current_time = time.time()
@@ -443,6 +448,8 @@ class Timer:
         self.finished = False
         self.fin_diff = None
         self.new_pb = False
+        self.pause_time = None
+        self.paused_duration = 0
 
         # Reset checkpoint status
         for cp in self.checkpoints.values():
@@ -452,6 +459,15 @@ class Timer:
         self.cp_diffs.clear()
         self.cp_diff_times.clear()
 
+    def Pause(self):
+        if self.pause_time is None:
+            self.pause_time = time.time()
+
+    def Resume(self):
+        if self.pause_time is not None:
+            self.paused_duration += time.time() - self.pause_time
+            self.pause_time = None
+            
     def TimerUpdate(self):
         self.Update()
         self.CheckFinish(car, track)
@@ -518,6 +534,7 @@ def BackToMainMenu():
 def BackToTrackPlay():
     global game_state
     game_state = STATE_PLAYING
+    timer.Resume()
 
 def TrackPlay():
     
@@ -573,6 +590,7 @@ def GeneralSettings():
 
 def GameMenu():
     global game_state, game_menu_buttons
+    timer.Pause()
     game_state = STATE_INGAME_MENU
     game_menu_buttons = [
         Button(0.325, 0.3, 0.35, 0.12, (150, 150, 170), (150, 150, 250), "Resume", BackToTrackPlay),
@@ -618,6 +636,7 @@ while True:
     elif game_state == STATE_INGAME_MENU:
         for button in game_menu_buttons:
             button.draw(screen)
+        
     
     elif game_state == STATE_GENERAL_SETTINGS:
         for button in general_settings_buttons:
@@ -633,8 +652,10 @@ while True:
             timer.Reset()
             car.CameraMovement()
 
-        if keys[pygame.K_ESCAPE]:
-            GameMenu()
+        if keys[pygame.K_ESCAPE] and timer.start_time != None:
+            if game_state == STATE_PLAYING:
+                GameMenu()
+            
         
         
         offset_x = car.camera_x - window_width / 2
@@ -650,7 +671,10 @@ while True:
             car.CameraMovement()
         car.adjust_for_terrain(track)
         timer.check_checkpoints(car, track)
-        timer.TimerUpdate()
+        if game_state == STATE_INGAME_MENU:
+            pass
+        elif game_state == STATE_PLAYING:
+            timer.TimerUpdate()
         player.draw(screen)
        
 
