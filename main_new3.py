@@ -1,5 +1,4 @@
 import pygame
-import random
 import math
 import time
 import os
@@ -54,6 +53,9 @@ class Car(pygame.sprite.Sprite):
             self.x_pos = x_pos_start
             self.y_pos = y_pos_start
             
+            self.x_pos_start = x_pos_start
+            self.y_pos_start = y_pos_start
+            
     def Variables(self):
         self.StartPosition(None, None)
         self.x_pos_new = 0
@@ -69,6 +71,7 @@ class Car(pygame.sprite.Sprite):
         self.trigger = False
         self.camera_x = self.x_pos
         self.camera_y = self.y_pos
+        self.cam_speed = 1
         self.coA = 0.7
         self.coVA = 0.9
         self.slow_factor = 1
@@ -171,8 +174,10 @@ class Car(pygame.sprite.Sprite):
         for ox, oy in wheel_offsets:
             rotated_x = ox * math.cos(math.radians(-self.angle)) - oy * math.sin(math.radians(-self.angle))
             rotated_y = ox * math.sin(math.radians(-self.angle)) + oy * math.cos(math.radians(-self.angle))
-            world_x = self.x_pos + rotated_x
-            world_y = self.y_pos + rotated_y
+            # world_x = self.x_pos + rotated_x
+            # world_y = self.y_pos + rotated_y
+            world_x = self.camera_x + rotated_x
+            world_y = self.camera_y + rotated_y
             wheel_positions.append((int(world_x), int(world_y)))
         self.wheel_positions = wheel_positions
         return wheel_positions
@@ -184,20 +189,27 @@ class Car(pygame.sprite.Sprite):
             color = track.get_color_at(x, y)
             if color == None:
                 grass_hits += 1
-            elif color[:3] == (74, 161, 74):
+            elif color[:3] == (74, 161, 74): # grass
                 grass_hits += 1
-            elif color[:3] == (146, 146, 56) or color[:3] == (209, 209, 108):
+                if self.cam_speed > 0.04:
+                    self.cam_speed -= 0.0002
+            elif color[:3] == (146, 146, 56) or color[:3] == (209, 209, 108): # booster
                 self.forward_speed += 0.05
-            elif color[:3] == (170, 95, 95) or color [:3] == (159, 31, 31):
+            elif color[:3] == (170, 95, 95) or color [:3] == (159, 31, 31): # engine-off
                 self.no_engine = True
-            elif color[:3] == (113, 206, 91) or color[:3] == (53, 136, 34):
+            elif color[:3] == (113, 206, 91) or color[:3] == (53, 136, 34): # reset
                 self.no_engine = False
+            else:
+                if self.cam_speed < 1:
+                    self.cam_speed += 0.0002
+
+
                             
         if grass_hits > 0:
             self.slow_factor = 1 - (self.penalty * grass_hits)
         elif grass_hits == 0:
             self.slow_factor = 1
-        print(color, self.x_pos, self.y_pos)
+    
     def Movement(self):
         keys = pygame.key.get_pressed()
 
@@ -227,14 +239,17 @@ class Car(pygame.sprite.Sprite):
         self.x_pos -= math.sin(math.radians(self.angle)) * self.forward_speed
 
         self.image = pygame.transform.rotozoom(self.original_image, self.angle, 1.0)
-        self.rect = self.image.get_rect(center=(window_width / 2, window_height / 2))
+        # self.rect = self.image.get_rect(center=(window_width / 2, window_height / 2))
+        self.rect = self.image.get_rect(center=(window_width/2, window_height/2))
 
     def CameraMovement(self):
         # Smooth camera follows car with delay
-        cam_speed = 0.9
-        self.camera_x += (self.x_pos - self.camera_x) * cam_speed
-        self.camera_y += (self.y_pos - self.camera_y) * cam_speed
-    
+        self.camera_x += (self.x_pos - self.camera_x) * self.cam_speed
+        self.camera_y += (self.y_pos - self.camera_y) * self.cam_speed
+        # self.camera_x = self.x_pos
+        # self.camera_y = self.y_pos
+
+
     def Reset(self):
         self.__init__()
         self.StartPosition(x_pos_start, y_pos_start)
