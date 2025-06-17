@@ -4,12 +4,14 @@ import time
 import os
 import json
 pygame.init()
+pygame.mixer.init()
 
 window_width = 1600
 window_height = 900
 screen = pygame.display.set_mode((window_width, window_height))
 Debug = True
 no_input = True
+
 
 track_buttons = []
 buttons = []
@@ -21,9 +23,25 @@ STATE_TRACK_MENU = "track_menu"
 STATE_INGAME_MENU = "Ingame menu"
 STATE_GENERAL_SETTINGS = "General settings"
 game_state = STATE_MENU
-
-
 PB_FILE = "pb_times.txt"
+music = True
+#sound effects
+CP_sfx = pygame.mixer.Sound("CP_cross.wav")
+CP_channel = pygame.mixer.Channel(1)
+CP_channel.set_volume(0.3)
+
+
+Fin_sfx = pygame.mixer.Sound("Fin.mp3")
+Fin_channel = pygame.mixer.Channel(2)
+Fin_channel.set_volume(0.5)
+
+
+
+if music == True:   
+    def play_music(filename, loop=-1, volume=0.5):
+        pygame.mixer.music.load(filename)
+        pygame.mixer.music.set_volume(volume)
+        pygame.mixer.music.play(loop)
 
 def load_best_times():
     if os.path.exists(PB_FILE):
@@ -78,6 +96,9 @@ class Car(pygame.sprite.Sprite):
         self.penalty = 0.2
         self.backwards_ratio = 0.7
         self.no_engine = False
+        self.in_the_air = False
+    
+        self.value_1 = 0
 
     def PlayerInput(self):
         keys = pygame.key.get_pressed()
@@ -187,32 +208,81 @@ class Car(pygame.sprite.Sprite):
         grass_hits = 0
         for x, y in wheel_positions:
             color = track.get_color_at(x, y)
-            if color == None:
-                grass_hits += 1
-            elif color[:3] == (74, 161, 74): # grass
-                grass_hits += 1
-                if self.cam_speed > 0.04:
-                    self.cam_speed -= 0.0002
-            elif color[:3] == (146, 146, 56) or color[:3] == (209, 209, 108): # booster
-                self.forward_speed += 0.05
-            elif color[:3] == (170, 95, 95) or color [:3] == (159, 31, 31): # engine-off
-                self.no_engine = True
-            elif color[:3] == (113, 206, 91) or color[:3] == (53, 136, 34): # reset
-                self.no_engine = False
-            else:
-                if self.cam_speed < 1:
-                    self.cam_speed += 0.0002
+            if self.in_the_air == False:
+                if color == None:
+                    grass_hits += 1
+                elif color[:3] == (74, 161, 74): # grass
+                    grass_hits += 1
+                    
+                    if 0 < self.cam_speed < 0.04:
+                        self.cam_speed += 1/400 * self.cam_speed
+                    
+                elif color[:3] == (146, 146, 56) or color[:3] == (209, 209, 108) or color[:3] == (208, 212, 168) or color[:3] == (147, 157, 76) or color[:3] == (209, 184, 108) or color[:3] == (142, 118, 53): # booster
+                    if color[:3] == (208, 212, 168) or color[:3] == (147, 157, 76): #ice boost
+                        self.cam_speed = 0.006
+                    self.forward_speed += 0.05
+                    if color[:3] == (209, 184, 108) or color[:3] == (142, 118, 53):
+                        if self.cam_speed > 0.04:
+                            self.cam_speed -= 1/400 * self.cam_speed
 
+                elif color[:3] == (170, 95, 95) or color [:3] == (159, 31, 31) or color[:3] == (170, 112, 95) or color [:3] == (159, 55, 31): # engine-off
+                    if color[:3] == (170, 112, 95) or color [:3] == (159, 55, 31):
+                        if self.cam_speed > 0.04:
+                            self.cam_speed -= 1/400 * self.cam_speed
+                    self.no_engine = True
+
+                elif color[:3] == (113, 206, 91) or color[:3] == (53, 136, 34) or color[:3] == (177, 206, 91) or color[:3] == (96, 136, 34): # reset
+                    if color[:3] == (177, 206, 91) or color[:3] == (96, 136, 34):
+                        if self.cam_speed > 0.04:
+                            self.cam_speed -= 1/400 * self.cam_speed
+                    self.no_engine = False
+
+                elif color[:3] == (179, 144, 197) or color[:3] == (151, 84, 168): #bumper
+                    self.InTheAir()
+                    self.in_the_air = True
+
+                elif color[:3] == (187, 233, 235) or color[:3] == (137, 182, 184) or color[:3] == (227, 155, 171) or color[:3] == (182, 202, 201) or color[:3] == (195, 118, 136) or color[:3] == (164, 183, 182): #ice
+                    if self.cam_speed > 0.006:
+                        self.cam_speed -= 1/400 * self.cam_speed
+
+                elif color[:3] == (127, 87, 55) or color[:3] == (95, 73, 57) or color[:3] == (180, 172, 166) or color[:3] == (198, 183, 163) or color[:3] == (255, 64, 0) or color[:3] == (199, 50, 0):
+                    if self.cam_speed > 0.04:
+                        self.cam_speed -= 1/400 * self.cam_speed
+
+                elif color[:3] == (207, 218, 218):
+                    if self.cam_speed > 0.005:
+                        self.cam_speed -= 1/400 * self.cam_speed
+                    grass_hits += 1
+
+                else:
+                    if self.cam_speed < 1:
+                        self.cam_speed += 1/400 * self.cam_speed
+        print(color)  
 
                             
         if grass_hits > 0:
             self.slow_factor = 1 - (self.penalty * grass_hits)
         elif grass_hits == 0:
             self.slow_factor = 1
-    
+
+    def InTheAir(self):
+        
+        if self.in_the_air == True and self.value_1 <= 120:
+            
+            self.scale = -0.01 * (self.value_1 ** 2) + 1.2 * self.value_1
+            self.y_pos -= math.cos(math.radians(self.angle)) * self.forward_speed
+            self.x_pos -= math.sin(math.radians(self.angle)) * self.forward_speed
+            self.image = pygame.transform.rotozoom(self.original_image, self.angle, 1+(self.scale/180))
+            self.rect = self.image.get_rect(center=(window_width/2, window_height/2))
+            self.value_1 += 1
+        else:
+            self.value_1 = 0
+            self.in_the_air = False
+
+
     def Movement(self):
         keys = pygame.key.get_pressed()
-
+        
         if keys[pygame.K_s] or keys[pygame.K_SPACE] or (keys[pygame.K_w] and self.no_engine == False):
             self.forward_speed += self.forward_a
 
@@ -223,7 +293,7 @@ class Car(pygame.sprite.Sprite):
 
             else:
                 self.forward_speed += self.deceleration * (2/(self.slow_factor+1))
-               
+                
         elif abs(self.forward_speed) < -self.deceleration:
             self.forward_speed = 0
 
@@ -239,7 +309,6 @@ class Car(pygame.sprite.Sprite):
         self.x_pos -= math.sin(math.radians(self.angle)) * self.forward_speed
 
         self.image = pygame.transform.rotozoom(self.original_image, self.angle, 1.0)
-        # self.rect = self.image.get_rect(center=(window_width / 2, window_height / 2))
         self.rect = self.image.get_rect(center=(window_width/2, window_height/2))
 
     def CameraMovement(self):
@@ -255,8 +324,10 @@ class Car(pygame.sprite.Sprite):
         self.StartPosition(x_pos_start, y_pos_start)
 
     def update(self):
-        self.PlayerInput()
-        self.Movement()
+        if self.in_the_air == False:
+            self.PlayerInput()
+            self.Movement()
+        self.InTheAir()
         self.CameraMovement()
         
 
@@ -300,7 +371,10 @@ class Timer:
             (255, 159, 0),   # CP1
             (237, 148, 0),   # CP2
             (218, 136, 0),   # CP3
-            (255, 119, 0)    # CP4
+            (195, 122, 0),   # CP4
+            (189, 119, 1),   # CP5
+            (179, 112, 0),   # CP6
+            (173, 108, 0)    # CP7
         ]
         self.checkpoints = {}
         for i in range(number_of_checkpoints):
@@ -313,14 +387,16 @@ class Timer:
 
     def Update(self):
         if self.start_time is None and time.time() - self.countdown_start >= self.countdown_duration:
-            self.start_time = time.time()
+            self.start_time = time.time()  
 
     def GetTime(self):
         if self.start_time is None:
             return 0
+        
         if self.end_time:
             return self.end_time - self.start_time - self.paused_duration
         now = time.time()
+
         if self.pause_time:
             return self.pause_time - self.start_time - self.paused_duration
         return now - self.start_time - self.paused_duration
@@ -332,14 +408,19 @@ class Timer:
         font_small = pygame.font.Font("Pixelon-OGALo.ttf", 26)
         font_big.set_bold(True)
         font_small.set_italic(True)
+       
 
         if self.start_time is None:
+            
             countdown_left = max(0, int(self.countdown_duration - (current_time - self.countdown_start)) + 1)
             text = font_big.render(str(countdown_left), True, (255, 255, 255))
             screen.blit(text, (0.483 * window_width, 0.3 * window_height))
+            
             return
-
+        
+        
         elapsed = self.GetTime()
+        
 
         # Display current run time
         time_text = font_main.render(f"{elapsed:.3f}s", True, (255, 255, 255))
@@ -368,7 +449,7 @@ class Timer:
         # Final finish difference shown briefly
         for i in range (1):
             if self.finished == True:
-                print(self.fin_diff)
+               
                 if self.fin_diff == None or self.fin_diff == 0 or self.fin_diff == "--:---":
                     color = (200, 200, 200)
                     sign = ""
@@ -385,7 +466,7 @@ class Timer:
                         
                     else:
                         print("Error, NoSelfFinDiff")
-                    diff_text = font_small.render(f"{sign}{self.fin_diff:.3f}", True, color) 
+                    diff_text = font_small.render(f"{sign}{self.fin_diff:.3f}s", True, color) 
         
                 screen.blit(diff_text, (0.483 * window_width, 0.88 * window_height))
 
@@ -401,6 +482,9 @@ class Timer:
             if color and color[:3] == (0, 159, 255):  # Finish line color
                 self.end_time = time.time()
                 self.finished = True
+                
+                Fin_channel.play(Fin_sfx, loops=0)
+
                 break
 
     def check_checkpoints(self, car, track):
@@ -409,13 +493,16 @@ class Timer:
 
         for cp_name, cp_data in self.checkpoints.items():
             if cp_data["reached"]:
+                
                 continue
+
 
             for wx, wy in car.get_wheel_world_positions():
                 color = track.get_color_at(wx, wy)
                 if color and color[:3] == cp_data["color"]:
                     cp_data["time"] = self.GetTime()
                     cp_data["reached"] = True
+                    CP_channel.play(CP_sfx, loops=0)
 
                     # Time difference from PB
                     pb_cp_time = self.best_times.get(self.level_name, {}).get(cp_name)
@@ -427,7 +514,7 @@ class Timer:
 
 
     def BestTime(self):
-
+        
         final_time = self.GetTime()
         best_time = self.best_times.get(self.level_name, {}).get("PB", None)
         if self.new_pb == False:
@@ -457,6 +544,7 @@ class Timer:
        
 
     def Reset(self):
+        
         self.countdown_start = time.time()
         self.start_time = None
         self.end_time = None
@@ -491,29 +579,35 @@ class Timer:
             self.BestTime()
         self.Draw(screen)
         
-
-        
-    
 class Button:
-
-    def __init__(self, x, y, width, height, color, hover_color, text, callback,):
-        self.rect = pygame.Rect(x*window_width, y*window_height, width*window_width, height*window_height)
+    def __init__(self, x, y, width, height, color, hover_color, text, callback):
+        self.rect = pygame.Rect(x * window_width, y * window_height, width * window_width, height * window_height)
         self.text = text
         self.callback = callback
         self.color = color
         self.hover_color = hover_color
+        self.selected = False  # ← New
         self.font = pygame.font.Font("Pixelon-OGALo.ttf", 48)
 
     def draw(self, screen):
         mouse_pos = pygame.mouse.get_pos()
-        pygame.draw.rect(screen, self.hover_color if self.rect.collidepoint(mouse_pos) else self.color, self.rect)
+        if self.selected:
+            draw_color = (200, 200, 255)  # ← Highlighted color
+        elif self.rect.collidepoint(mouse_pos):
+            draw_color = self.hover_color
+        else:
+            draw_color = self.color
+        pygame.draw.rect(screen, draw_color, self.rect)
         text_surf = self.font.render(self.text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=self.rect.center)
         screen.blit(text_surf, text_rect)
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            self.callback()
+            if button.text == "Back To Main Menu" or "Start Game":
+                self.callback()  
+            else:
+                self.callback(self)
 
 
 
@@ -543,13 +637,15 @@ def TrackMenu():
 def BackToMainMenu():
     global game_state
     game_state = STATE_MENU
-    car.Reset()
     timer.Reset()
+    
 
 def BackToTrackPlay():
     global game_state
     game_state = STATE_PLAYING
     timer.Resume()
+    if music == True:
+        play_music("ingame_music.mp3", -1, 0.3)
 
 def TrackPlay():
     
@@ -578,33 +674,124 @@ def TrackPlay():
         no_input = False
         x_pos_start = 1790
         y_pos_start = 1765
+
+    elif button.text == "A04":
+        track = Track("track_A04.png")
+        level_name = "Track_A04"
+        number_of_checkpoints = 2
+        no_input = False
+        x_pos_start = 250
+        y_pos_start = 1270
+
+    elif button.text == "A05":
+        track = Track("track_A05.png")
+        level_name = "Track_A05"
+        number_of_checkpoints = 2
+        no_input = False
+        x_pos_start = 1791
+        y_pos_start = 2770
+        
+
+    elif button.text == "A06":
+        track = Track("track_A06.png")
+        level_name = "Track_A06"
+        number_of_checkpoints = 2
+        no_input = False
+        x_pos_start = 767
+        y_pos_start = 3297
+        
+
+    elif button.text == "A07":
+        track = Track("track_A07.png")
+        level_name = "Track_A07"
+        number_of_checkpoints = 4
+        no_input = False
+        x_pos_start = 2816
+        y_pos_start = 3297
+        
+
+    elif button.text == "A08":
+        track = Track("track_A08.png")
+        level_name = "Track_A08"
+        number_of_checkpoints = 0
+        no_input = False
+        x_pos_start = 1788
+        y_pos_start = 3794
+
+    elif button.text == "A09":
+        track = Track("track_A09.png")
+        level_name = "Track_A09"
+        number_of_checkpoints = 7
+        no_input = False
+        x_pos_start = 766
+        y_pos_start = 7363
     
     timer = Timer(level_name=level_name, number_of_checkpoints=number_of_checkpoints)
     car.StartPosition(x_pos_start, y_pos_start)
+    car.Reset()
     game_state = STATE_PLAYING
+    
+    if music == True:   
+        play_music("ingame_music.mp3", -1, 0.3)
+    
     
 
 def QuitGame():
     pygame.quit()
     exit()
 
-def SettingsAudio():
-    pass
 
-def SettingsControls():
-    pass
+def GeneralSettings(clicked_button=None):
+    global game_state, general_settings_buttons, music
 
-def GeneralSettings():
-    global game_state, general_settings_buttons
     game_state = STATE_GENERAL_SETTINGS
+
+    def handle_music_click(btn):
+
+        for b in general_settings_buttons:
+            if b.text.startswith("Music"):
+                b.selected = False
+        btn.selected = True
+        music = (btn.text == "Music On")
+
+    def handle_sfx_click(btn):
+   
+        for b in general_settings_buttons:
+            if b.text.startswith("Sounds"):
+                b.selected = False
+        btn.selected = True
+        if btn.text == "Sounds (SFX) On":
+            CP_channel.set_volume(0.3)
+            Fin_channel.set_volume(0.3)
+        else:
+            CP_channel.set_volume(0)
+            Fin_channel.set_volume(0)
+
+
     general_settings_buttons = [
-        Button(0.15, 0.1, 0.2, 0.12, (150, 150, 170), (150, 150, 250), "Audio", SettingsAudio),
-        Button(0.40, 0.1, 0.2, 0.12, (150, 150, 170), (150, 150, 250), "Controls", SettingsControls),
-        Button(0.65, 0.1, 0.2, 0.12, (150, 150, 170), (150, 150, 250), "Back", BackToMainMenu)
+        Button(0.2, 0.225, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Music On", handle_music_click),
+        Button(0.55, 0.225, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Music Off", handle_music_click),
+        Button(0.2, 0.425, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Sounds (SFX) On", handle_sfx_click),
+        Button(0.55, 0.425, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Sounds (SFX) Off", handle_sfx_click),
+        Button(0.325, 0.6, 0.35, 0.12, (150, 150, 170), (150, 150, 250), "Back To Main Menu", BackToMainMenu)
     ]
 
+   
+    if clicked_button is None:
+        for b in general_settings_buttons:
+            if b.text == "Music On":
+                b.selected = music
+            elif b.text == "Music Off":
+                b.selected = not music
+            elif b.text == "Sounds (SFX) On":
+                b.selected = CP_channel.get_volume() > 0
+            elif b.text == "Sounds (SFX) Off":
+                b.selected = CP_channel.get_volume() == 0
+
 def GameMenu():
+    
     global game_state, game_menu_buttons
+    pygame.mixer.music.stop()
     timer.Pause()
     game_state = STATE_INGAME_MENU
     game_menu_buttons = [
@@ -670,13 +857,15 @@ while True:
         if keys[pygame.K_ESCAPE] and timer.start_time != None:
             if game_state == STATE_PLAYING:
                 GameMenu()
+
             
         
         
         offset_x = car.camera_x - window_width / 2
         offset_y = car.camera_y - window_height / 2
-
+        
         screen.fill((74, 161, 74))
+            
         track.draw(screen, offset_x, offset_y)
 
         if timer.start_time is not None:
@@ -709,4 +898,5 @@ while True:
                 pygame.draw.circle(screen, c, (screen_x, screen_y), 5)
             
     pygame.display.update()
+    
     clock.tick(120)
