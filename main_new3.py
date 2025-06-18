@@ -9,7 +9,7 @@ pygame.mixer.init()
 window_width = 1600
 window_height = 900
 screen = pygame.display.set_mode((window_width, window_height))
-Debug = True
+Debug = False
 no_input = True
 
 
@@ -284,7 +284,7 @@ class Car(pygame.sprite.Sprite):
                 else:
                     if self.cam_speed < 1:
                         self.cam_speed += 1/400 * self.cam_speed
-        print(color)  
+        
         if self.no_engine == True:
             self.set_speed_color((255, 0, 0))
                             
@@ -743,8 +743,8 @@ def TrackPlay():
         level_name = "Track_A01"
         number_of_checkpoints = 0
         no_input = False
-        x_pos_start = 760
-        y_pos_start = 4325
+        x_pos_start = 769
+        y_pos_start = 4327
 
     elif button.text == "A02":
         track = Track("track_A02.png")
@@ -752,7 +752,7 @@ def TrackPlay():
         number_of_checkpoints = 2
         no_input = False
         x_pos_start = 1795
-        y_pos_start = 2280
+        y_pos_start = 2278
     
     elif button.text == "A03":
         track = Track("track_A03.png")
@@ -767,8 +767,8 @@ def TrackPlay():
         level_name = "Track_A04"
         number_of_checkpoints = 2
         no_input = False
-        x_pos_start = 250
-        y_pos_start = 1270
+        x_pos_start = 258
+        y_pos_start = 1253
 
     elif button.text == "A05":
         track = Track("track_A05.png")
@@ -776,7 +776,7 @@ def TrackPlay():
         number_of_checkpoints = 2
         no_input = False
         x_pos_start = 1791
-        y_pos_start = 2770
+        y_pos_start = 2789
         
 
     elif button.text == "A06":
@@ -785,7 +785,7 @@ def TrackPlay():
         number_of_checkpoints = 2
         no_input = False
         x_pos_start = 767
-        y_pos_start = 3297
+        y_pos_start = 3306
         
 
     elif button.text == "A07":
@@ -794,7 +794,7 @@ def TrackPlay():
         number_of_checkpoints = 4
         no_input = False
         x_pos_start = 2816
-        y_pos_start = 3297
+        y_pos_start = 3305
         
 
     elif button.text == "A08":
@@ -802,8 +802,8 @@ def TrackPlay():
         level_name = "Track_A08"
         number_of_checkpoints = 0
         no_input = False
-        x_pos_start = 1788
-        y_pos_start = 3794
+        x_pos_start = 1791
+        y_pos_start = 3815
 
     elif button.text == "A09":
         track = Track("track_A09.png")
@@ -811,7 +811,7 @@ def TrackPlay():
         number_of_checkpoints = 7
         no_input = False
         x_pos_start = 766
-        y_pos_start = 7363
+        y_pos_start = 7400
     
     timer = Timer(level_name=level_name, number_of_checkpoints=number_of_checkpoints)
     car.StartPosition(x_pos_start, y_pos_start)
