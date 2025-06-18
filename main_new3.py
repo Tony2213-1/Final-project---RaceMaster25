@@ -25,6 +25,7 @@ STATE_GENERAL_SETTINGS = "General settings"
 game_state = STATE_MENU
 PB_FILE = "pb_times.txt"
 music = True
+sfx = True
 #sound effects
 CP_sfx = pygame.mixer.Sound("CP_cross.wav")
 CP_channel = pygame.mixer.Channel(1)
@@ -52,7 +53,7 @@ engine_sfx_on = [False, False]
 def sfxUpdate(engine_sfx_key_on):
     engine_sfx_on[1] = engine_sfx_key_on
     if engine_sfx_on[0] == False and engine_sfx_on[1] == True:
-        Engine_channel.play(engine_on, loops=-1)
+        Engine_channel.play(engine_idle, loops=-1)
 
     elif engine_sfx_on[0] == True and engine_sfx_on[1] == False:
         Engine_channel.stop()
@@ -74,6 +75,7 @@ def save_best_times(best_times):
 class Car(pygame.sprite.Sprite):
     
     def __init__(self):
+
         super().__init__()
         self.Variables()
         self.original_image = pygame.image.load("formula_nr1.png").convert_alpha()
@@ -115,7 +117,8 @@ class Car(pygame.sprite.Sprite):
         self.backwards_ratio = 0.7
         self.no_engine = False
         self.in_the_air = False
-    
+        self.speed_display_color = (255, 255, 255)  # default white
+        self.speed_display_color_timer = 0
         self.value_1 = 0
 
     def PlayerInput(self):
@@ -242,22 +245,28 @@ class Car(pygame.sprite.Sprite):
                     if color[:3] == (209, 184, 108) or color[:3] == (142, 118, 53):
                         if self.cam_speed > 0.04:
                             self.cam_speed -= 1/400 * self.cam_speed
+                    self.set_speed_color((255, 255, 0))
 
                 elif color[:3] == (170, 95, 95) or color [:3] == (159, 31, 31) or color[:3] == (170, 112, 95) or color [:3] == (159, 55, 31): # engine-off
                     if color[:3] == (170, 112, 95) or color [:3] == (159, 55, 31):
                         if self.cam_speed > 0.04:
                             self.cam_speed -= 1/400 * self.cam_speed
                     self.no_engine = True
+                    Engine_channel.set_volume(0)
+                    
 
                 elif color[:3] == (113, 206, 91) or color[:3] == (53, 136, 34) or color[:3] == (177, 206, 91) or color[:3] == (96, 136, 34): # reset
                     if color[:3] == (177, 206, 91) or color[:3] == (96, 136, 34):
                         if self.cam_speed > 0.04:
                             self.cam_speed -= 1/400 * self.cam_speed
                     self.no_engine = False
+                    self.set_speed_color((100, 255, 100))
+                    Engine_channel.set_volume(0.5)
 
                 elif color[:3] == (179, 144, 197) or color[:3] == (151, 84, 168): #bumper
                     self.InTheAir()
                     self.in_the_air = True
+                    self.set_speed_color((200, 100, 255))
 
                 elif color[:3] == (187, 233, 235) or color[:3] == (137, 182, 184) or color[:3] == (227, 155, 171) or color[:3] == (182, 202, 201) or color[:3] == (195, 118, 136) or color[:3] == (164, 183, 182): #ice
                     if self.cam_speed > 0.006:
@@ -276,12 +285,17 @@ class Car(pygame.sprite.Sprite):
                     if self.cam_speed < 1:
                         self.cam_speed += 1/400 * self.cam_speed
         print(color)  
-
+        if self.no_engine == True:
+            self.set_speed_color((255, 0, 0))
                             
         if grass_hits > 0:
             self.slow_factor = 1 - (self.penalty * grass_hits)
         elif grass_hits == 0:
             self.slow_factor = 1
+
+    def set_speed_color(self, color):
+        self.speed_display_color = color
+        self.speed_display_color_timer = time.time()
 
     def InTheAir(self):
         
@@ -300,8 +314,9 @@ class Car(pygame.sprite.Sprite):
 
     def Movement(self):
         keys = pygame.key.get_pressed()
-
+        
         sfxUpdate(keys[pygame.K_w])
+        
         
         if keys[pygame.K_s] or keys[pygame.K_SPACE] or (keys[pygame.K_w] and self.no_engine == False):
             self.forward_speed += self.forward_a
@@ -343,6 +358,10 @@ class Car(pygame.sprite.Sprite):
     def Reset(self):
         self.__init__()
         self.StartPosition(x_pos_start, y_pos_start)
+        if sfx == True:
+            Engine_channel.set_volume(0.5)
+        elif sfx == False:
+            Engine_channel.set_volume(0)
 
     def update(self):
         if self.in_the_air == False:
@@ -386,6 +405,15 @@ class Timer:
         self.cp_diff_times = {}
         self.pause_time = None
         self.paused_duration = 0
+        self.pb_flash_time = None
+        self.name_input_active = False
+        self.entered_name = ""
+        self.input_start_time = None
+        self.saved_names = {}  #store names per track
+        initials = self.best_times.get(level_name, {}).get("initials")
+        if initials:
+            self.saved_names[level_name] = initials
+            
 
         # Dynamically generate checkpoints
         checkpoint_colors = [
@@ -449,12 +477,33 @@ class Timer:
 
         # Show PB
         if self.best_time is not None:
-            pb_text = font_main.render(f"PB: {self.best_time:.3f}s", True, (255, 255, 255))
+            if self.pb_flash_time and time.time() - self.pb_flash_time < 2.0:
+                pb_color = (150, 150, 255)
+            else:
+                pb_color = (255, 255, 255)
+            
+            name = self.saved_names.get(self.level_name, "")
+            pb_text_str = f"PB ({name}): {self.best_time:.3f}s" if name else f"PB: {self.best_time:.3f}s"
+            pb_text = font_main.render(pb_text_str, True, pb_color)
         else:
             pb_text = font_main.render("PB: --:---", True, (255, 255, 255))
+        screen.blit(pb_text, (0.7 * window_width, 0.92 * window_height))
 
-        screen.blit(pb_text, (0.8 * window_width, 0.92 * window_height))
-        
+        if self.pb_flash_time and time.time() - self.pb_flash_time < 2.0:
+            newpb_font = pygame.font.Font("Pixelon-OGALo.ttf", 192)
+            newpb_font.set_bold(True)
+            newpb_text = newpb_font.render("NEW PB!", True, (100, 100, 255))
+            screen.blit(newpb_text, (0.3 * window_width, 0.2 * window_height))
+            return  # Don't draw anything else yet
+
+        # After the flash, show name input if active
+        if self.name_input_active:
+            input_font = pygame.font.Font("Pixelon-OGALo.ttf", 54)
+            prompt = input_font.render("Enter your initials:", True, (255, 255, 255))
+            name = input_font.render(self.entered_name.ljust(3, "_"), True, (100, 200, 255))
+
+            screen.blit(prompt, (0.4 * window_width, 0.2 * window_height))
+            screen.blit(name, (0.48 * window_width, 0.3 * window_height))
 
         # Show checkpoint differences
         y_offset = 0.83 * window_height
@@ -490,7 +539,8 @@ class Timer:
                     diff_text = font_small.render(f"{sign}{self.fin_diff:.3f}s", True, color) 
         
                 screen.blit(diff_text, (0.483 * window_width, 0.88 * window_height))
-
+        if self.pb_flash_time and time.time() - self.pb_flash_time >= 2.0 and self.name_input_active and not self.input_start_time:
+            self.input_start_time = time.time()
 
     def CheckFinish(self, car, track):
         if self.finished or self.start_time is None:
@@ -503,9 +553,15 @@ class Timer:
             if color and color[:3] == (0, 159, 255):  # Finish line color
                 self.end_time = time.time()
                 self.finished = True
-                
-                Fin_channel.play(Fin_sfx, loops=0)
 
+                # Trigger PB check and flash here
+                final_time = self.GetTime()
+                previous_pb = self.best_times.get(self.level_name, {}).get("PB", None)
+
+                if previous_pb is None or final_time < previous_pb:
+                    self.pb_flash_time = time.time()
+
+                Fin_channel.play(Fin_sfx, loops=0)
                 break
 
     def check_checkpoints(self, car, track):
@@ -545,9 +601,15 @@ class Timer:
                 self.fin_diff = None
             self.new_pb = True
 
-        if best_time == None or final_time < best_time :
+        if best_time is None or final_time < best_time:
             best_time = final_time
             self.best_time = best_time
+
+            self.pb_flash_time = time.time()
+            self.name_input_active = True
+            self.entered_name = ""
+            self.input_start_time = time.time()
+            
             
 
             if self.level_name not in self.best_times:
@@ -559,7 +621,9 @@ class Timer:
             for cp_name, cp_data in self.checkpoints.items():
                 if cp_data["reached"]:
                     self.best_times[self.level_name][cp_name] = cp_data["time"]
-
+            if len(self.entered_name) == 3:
+                self.saved_names[self.level_name] = self.entered_name.upper()
+                self.best_times[self.level_name]["initials"] = self.entered_name.upper()
             save_best_times(self.best_times)    
         
        
@@ -789,6 +853,7 @@ def GeneralSettings(clicked_button=None):
             pygame.mixer.music.stop()
 
     def handle_sfx_click(btn):
+        global sfx
         # Deselect both SFX buttons
         for b in general_settings_buttons:
             if b.text.startswith("Sounds"):
@@ -800,10 +865,12 @@ def GeneralSettings(clicked_button=None):
             CP_channel.set_volume(0.3)
             Fin_channel.set_volume(0.3)
             Engine_channel.set_volume(0.3)
+            sfx = True
         else:
             CP_channel.set_volume(0)
             Fin_channel.set_volume(0)
             Engine_channel.set_volume(0)
+            sfx = False
 
     # --- BUTTON CREATION ---
     general_settings_buttons = [
@@ -847,6 +914,23 @@ while True:
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+
+        if timer.name_input_active and event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_RETURN:
+                if len(timer.entered_name) == 3:
+                    initials = timer.entered_name.upper()
+                    timer.saved_names[timer.level_name] = initials
+                    timer.best_times[timer.level_name]["initials"] = initials
+                    save_best_times(timer.best_times)
+
+                    # 🔧 Update the displayed best_time with the new initials
+                    timer.best_time = timer.best_times[timer.level_name]["PB"]
+
+                    timer.name_input_active = False
+            elif event.key == pygame.K_BACKSPACE:
+                timer.entered_name = timer.entered_name[:-1]
+            elif len(timer.entered_name) < 3 and event.unicode.isalpha():
+                timer.entered_name += event.unicode.upper()
 
         if game_state == STATE_MENU:
             for button in buttons:
@@ -903,7 +987,10 @@ while True:
         screen.fill((74, 161, 74))
             
         track.draw(screen, offset_x, offset_y)
-
+        overlay_height = int(window_height * 0.09)
+        overlay_surface = pygame.Surface((window_width, overlay_height), pygame.SRCALPHA)
+        overlay_surface.fill((50, 50, 50, 160))  # RGBA: last value is transparency (0–255)
+        screen.blit(overlay_surface, (0, window_height - overlay_height))
         if timer.start_time is not None:
             player.update()
         else:
@@ -916,7 +1003,17 @@ while True:
         elif game_state == STATE_PLAYING:
             timer.TimerUpdate()
         player.draw(screen)
-       
+        # Speed display logic
+        speed_text_color = car.speed_display_color
+
+        # Revert to white after 1 second
+        if time.time() - car.speed_display_color_timer > 0.3:
+            speed_text_color = (255, 255, 255)
+
+        speed_font = pygame.font.Font("Pixelon-OGALo.ttf", 54)
+        speed_font.get_bold()
+        speed_text = speed_font.render(f"{car.forward_speed*20:.0f}", True, speed_text_color)
+        screen.blit(speed_text, (30, window_height - 60))
 
         
         if Debug == True:
