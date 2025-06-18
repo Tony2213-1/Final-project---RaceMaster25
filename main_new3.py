@@ -9,8 +9,7 @@ pygame.mixer.init()
 window_width = 1600
 window_height = 900
 screen = pygame.display.set_mode((window_width, window_height))
-Debug = False
-no_input = True
+Debug = Falseno_input = True
 
 
 track_buttons = []
@@ -37,8 +36,7 @@ Fin_channel = pygame.mixer.Channel(2)
 Fin_channel.set_volume(0.5)
 
 engine_idle = pygame.mixer.Sound("Engine_idle.mp3")
-engine_off= pygame.mixer.Sound("Engine_forward Clipchamp.mp3")
-engine_on = pygame.mixer.Sound("engine_sloowdown.mp3")
+
 Engine_channel = pygame.mixer.Channel(3)
 Engine_channel.set_volume(0.5)
 
