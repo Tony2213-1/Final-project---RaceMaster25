@@ -35,7 +35,11 @@ Fin_sfx = pygame.mixer.Sound("Fin.mp3")
 Fin_channel = pygame.mixer.Channel(2)
 Fin_channel.set_volume(0.5)
 
-
+engine_idle = pygame.mixer.Sound("Engine_idle.mp3")
+engine_off= pygame.mixer.Sound("Engine_forward Clipchamp.mp3")
+engine_on = pygame.mixer.Sound("engine_sloowdown.mp3")
+Engine_channel = pygame.mixer.Channel(3)
+Engine_channel.set_volume(0.5)
 
 if music == True:   
     def play_music(filename, loop=-1, volume=0.5):
@@ -285,6 +289,7 @@ class Car(pygame.sprite.Sprite):
         
         if keys[pygame.K_s] or keys[pygame.K_SPACE] or (keys[pygame.K_w] and self.no_engine == False):
             self.forward_speed += self.forward_a
+            
 
         elif self.forward_speed > 0:
 
@@ -592,7 +597,7 @@ class Button:
     def draw(self, screen):
         mouse_pos = pygame.mouse.get_pos()
         if self.selected:
-            draw_color = (200, 200, 255)  # ← Highlighted color
+            draw_color = (100, 100, 155)  # ← Highlighted color
         elif self.rect.collidepoint(mouse_pos):
             draw_color = self.hover_color
         else:
@@ -601,13 +606,15 @@ class Button:
         text_surf = self.font.render(self.text, True, (255, 255, 255))
         text_rect = text_surf.get_rect(center=self.rect.center)
         screen.blit(text_surf, text_rect)
-
+        
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
-            if button.text == "Back To Main Menu" or "Start Game":
+            if button.text == "Back To Main Menu" or button.text == "Start Game":
                 self.callback()  
-            else:
+            elif button.text == "Music On" or button.text == "Music Off" or button.text == "Sounds (SFX) On" or button.text == "Sounds (SFX) Off":
                 self.callback(self)
+            else:
+                self.callback()
 
 
 
@@ -746,28 +753,43 @@ def GeneralSettings(clicked_button=None):
 
     game_state = STATE_GENERAL_SETTINGS
 
+    # --- CALLBACKS ---
     def handle_music_click(btn):
-
+        global music
+        # Deselect both music buttons
         for b in general_settings_buttons:
             if b.text.startswith("Music"):
                 b.selected = False
+        # Select current
         btn.selected = True
-        music = (btn.text == "Music On")
+
+        if btn.text == "Music On":
+            music = True
+            pygame.mixer.music.set_volume(0.5)
+            
+
+        else:
+            music = False
+            pygame.mixer.music.stop()
 
     def handle_sfx_click(btn):
-   
+        # Deselect both SFX buttons
         for b in general_settings_buttons:
             if b.text.startswith("Sounds"):
                 b.selected = False
+        # Select current
         btn.selected = True
+
         if btn.text == "Sounds (SFX) On":
             CP_channel.set_volume(0.3)
             Fin_channel.set_volume(0.3)
+            Engine_channel.set_volume(0.3)
         else:
             CP_channel.set_volume(0)
             Fin_channel.set_volume(0)
+            Engine_channel.set_volume(0)
 
-
+    # --- BUTTON CREATION ---
     general_settings_buttons = [
         Button(0.2, 0.225, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Music On", handle_music_click),
         Button(0.55, 0.225, 0.25, 0.12, (150, 150, 170), (150, 150, 250), "Music Off", handle_music_click),
@@ -776,18 +798,16 @@ def GeneralSettings(clicked_button=None):
         Button(0.325, 0.6, 0.35, 0.12, (150, 150, 170), (150, 150, 250), "Back To Main Menu", BackToMainMenu)
     ]
 
-   
-    if clicked_button is None:
-        for b in general_settings_buttons:
-            if b.text == "Music On":
-                b.selected = music
-            elif b.text == "Music Off":
-                b.selected = not music
-            elif b.text == "Sounds (SFX) On":
-                b.selected = CP_channel.get_volume() > 0
-            elif b.text == "Sounds (SFX) Off":
-                b.selected = CP_channel.get_volume() == 0
-
+    # --- SET DEFAULT SELECTED STATES ---
+    for b in general_settings_buttons:
+        if b.text == "Music On":
+            b.selected = music
+        elif b.text == "Music Off":
+            b.selected = not music
+        elif b.text == "Sounds (SFX) On":
+            b.selected = CP_channel.get_volume() > 0
+        elif b.text == "Sounds (SFX) Off":
+            b.selected = CP_channel.get_volume() == 0
 def GameMenu():
     
     global game_state, game_menu_buttons
@@ -896,7 +916,7 @@ while True:
                 screen_y = int(wy - offset_y)
                     
                 pygame.draw.circle(screen, c, (screen_x, screen_y), 5)
-            
+         
     pygame.display.update()
     
     clock.tick(120)
