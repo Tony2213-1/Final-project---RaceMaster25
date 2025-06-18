@@ -47,6 +47,20 @@ if music == True:
         pygame.mixer.music.set_volume(volume)
         pygame.mixer.music.play(loop)
 
+engine_sfx_on = [False, False]
+
+def sfxUpdate(engine_sfx_key_on):
+    engine_sfx_on[1] = engine_sfx_key_on
+    if engine_sfx_on[0] == False and engine_sfx_on[1] == True:
+        Engine_channel.play(engine_on, loops=-1)
+
+    elif engine_sfx_on[0] == True and engine_sfx_on[1] == False:
+        Engine_channel.stop()
+
+    engine_sfx_on[0] = engine_sfx_on[1]
+        
+
+
 def load_best_times():
     if os.path.exists(PB_FILE):
         with open(PB_FILE, "r") as file:
@@ -286,6 +300,8 @@ class Car(pygame.sprite.Sprite):
 
     def Movement(self):
         keys = pygame.key.get_pressed()
+
+        sfxUpdate(keys[pygame.K_w])
         
         if keys[pygame.K_s] or keys[pygame.K_SPACE] or (keys[pygame.K_w] and self.no_engine == False):
             self.forward_speed += self.forward_a
